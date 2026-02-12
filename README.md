@@ -8,7 +8,7 @@
 สถาปัตยกรรมของระบบประกอบด้วย 3 ส่วนหลัก (Modular Workflow):
 
 1.  **Speech-to-Text (STT) Stage**: ทำหน้าที่รับไฟล์เสียงและประมวลผลในระดับ Local เพื่อแปลงคำพูดเป็นข้อความดิบ (Raw Transcript)
-2.  **Information Extraction (IE) Stage**: นำข้อความดิบส่งต่อให้ Large Language Model (Gemini 1.5/2.5 Flash) ทำหน้าที่เป็น Semantic Parser ในการวิเคราะห์และสรุปข้อมูลตามฟิลด์ที่กำหนด (Name, Surname, Gender, Phone, License Plate) ในรูปแบบ JSON
+2.  **Information Extraction (IE) Stage**: นำข้อความดิบส่งต่อให้ Large Language Model (Gemini 2.5 Flash) ทำหน้าที่เป็น Semantic Parser ในการวิเคราะห์และสรุปข้อมูลตามฟิลด์ที่กำหนด (Name, Surname, Gender, Phone, License Plate) ในรูปแบบ JSON
 3.  **Validation & Logic Stage**: นำ JSON สรุปเข้าสู่กระบวนการตรวจสอบความถูกต้องด้วย Pydantic (Rule-based Validation) เพื่อประเมินสถานะของข้อมูลว่าเป็น COMPLETE หรือ INCOMPLETE
 
 ---

@@ -32,11 +32,11 @@ class CustomerInfo(BaseModel):
         
         # Rule 1: NCC NNNN (1 digit, 2 thai chars, 1-4 digits)
         # Example: 1กข 1234 or 1กข1234
-        pattern_1 = r'^[0-9][ก-ฮ]{2} ?[0-9]{1,4}$'
+        pattern_1 = r'^[0-9][ก-ฮ]{2}\s*[0-9]{1,4}$'
         
         # Rule 2: CC NNNN (2 thai chars, 0 digits (front), 1-4 digits (back))
         # Example: กข 1234 or กข1234
-        pattern_2 = r'^[ก-ฮ]{2} ?[0-9]{1,4}$'
+        pattern_2 = r'^[ก-ฮ]{2}\s*[0-9]{1,4}$'
         
         # Rule 3: NN-NNNN (Truck) (2 digits, hyphen, 4 digits)
         # Example: 70-1234
