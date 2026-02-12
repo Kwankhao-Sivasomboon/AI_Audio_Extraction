@@ -44,3 +44,5 @@ huggingface/
 Thumbs.db
 
 *.pdf
+*.dll
+audio/

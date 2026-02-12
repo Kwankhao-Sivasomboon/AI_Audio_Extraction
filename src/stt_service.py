@@ -11,19 +11,16 @@ class STTService:
             compute_type: "int8" for efficiency on GTX 1650 Ti
         """
         print(f"Loading Whisper model '{model_size}' with compute_type '{compute_type}'...")
-        # device="cuda" if available, else "cpu"
+        # Use GPU if available, otherwise fallback to CPU
         self.model = WhisperModel(model_size, device="auto", compute_type=compute_type)
-        print("Whisper model loaded.")
+        print(f"Whisper model loaded on {self.model.model.device}.")
 
     def transcribe(self, audio_path: str) -> str:
-        """
-        Transcribe audio file to text.
-        """
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
         print(f"Transcribing {audio_path}...")
-        segments, info = self.model.transcribe(audio_path, beam_size=5)
+        segments, _ = self.model.transcribe(audio_path, beam_size=5)
         
         transcript = []
         for segment in segments:

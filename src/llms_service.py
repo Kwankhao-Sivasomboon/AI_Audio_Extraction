@@ -9,8 +9,13 @@ class LLMService:
         """
         Initialize Gemini API integration.
         """
+        if not Config.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not set in environment variables.")
         genai.configure(api_key=Config.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel(
+            model_name='gemini-2.5-flash',
+            generation_config={"temperature": 0.4}
+        )
 
     def extract_info(self, transcript: str) -> str:
         """
@@ -18,13 +23,25 @@ class LLMService:
         Returns a JSON string.
         """
         prompt = f"""
-        You are an AI assistant that extracts structured data from text.
+        You are an AI assistant that extracts structured data from Thai text.
         Extract the following information from the text below:
         - name (First name only)
         - surname (Last name only)
         - gender (Male/Female/Other)
-        - phone (Phone number)
+        - phone (Phone number, remove any hyphens or spaces, keep only digits)
         - license_plate (Vehicle license plate number)
+
+        Specific Instructions for Thai Logic:
+        1. **Name/Surname**: 
+           - Usually follows "ชื่อ" (Name) and then Surname.
+           - "สมชาย" is a common Thai Name. "ใจดี" is a common Surname.
+        2. **Gender**: 
+           - Words like "เพศชาย", "เพชรชาย" (misheard), "ผู้ชาย", "ผม" imply Gender = Male.
+           - Words like "เพศหญิง", "ผู้หญิง", "ดิฉัน" imply Gender = Female.
+           - Do NOT use "เพชรชาย" or similar gender words as a Name or Surname.
+        3. **License Plate**:
+           - Convert phonetic Thai words like "ก็ขอ", "กอขอ" to standard two-letter thai vehicle codes "กข".
+           - Ensure the format matches standard Thai license plates (e.g., "1กข 1234", "กข 1234", "70-1234").
 
         Text: "{transcript}"
 
