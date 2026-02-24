@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Processor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --surface-border: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.5);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.15), transparent 25%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--surface-border);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-dim);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        /* Microphone Button */
+        .mic-container {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2rem;
+            width: 160px;
+            height: 160px;
+        }
+
+        .mic-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            box-shadow: 
+                inset 0 2px 4px rgba(255, 255, 255, 0.05),
+                0 10px 20px rgba(0, 0, 0, 0.5),
+                0 0 0 2px var(--surface-border);
+            color: var(--text-main);
+            font-size: 3rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                inset 0 2px 4px rgba(255, 255, 255, 0.1),
+                0 15px 30px rgba(0, 0, 0, 0.6),
+                0 0 0 2px var(--primary);
+        }
+
+        .mic-btn.recording {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            box-shadow: 
+                inset 0 2px 4px rgba(255, 255, 255, 0.2),
+                0 10px 20px rgba(239, 68, 68, 0.3),
+                0 0 0 2px var(--danger);
+            animation: pulse-danger 2s infinite;
+        }
+
+        .mic-btn.recording:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                inset 0 2px 4px rgba(255, 255, 255, 0.3),
+                0 15px 30px rgba(239, 68, 68, 0.4),
+                0 0 0 2px var(--danger);
+        }
+
+        .mic-btn.processing {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            box-shadow: 
+                inset 0 2px 4px rgba(255, 255, 255, 0.2),
+                0 10px 20px rgba(59, 130, 246, 0.3),
+                0 0 0 2px var(--primary);
+            animation: spin 1.5s linear infinite;
+        }
+
+        /* Ripple Effects */
+        .ripple {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--danger-glow);
+            z-index: 1;
+            opacity: 0;
+            transform: scale(1);
+        }
+
+        .mic-btn.recording ~ .ripple {
+            animation: ripple-anim 2s infinite;
+        }
+        
+        .mic-btn.recording ~ .ripple:nth-child(2) {
+            animation-delay: 0.6s;
+        }
+
+        .mic-btn.recording ~ .ripple:nth-child(3) {
+            animation-delay: 1.2s;
+        }
+
+        .status-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            height: 30px;
+            margin-bottom: 2rem;
+            transition: color 0.3s ease;
+        }
+
+        /* Results Box */
+        .results-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: left;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 0;
+            overflow: hidden;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .results-box.show {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 1000px;
+            visibility: visible;
+            pointer-events: auto;
+            margin-top: 1rem;
+        }
+
+        .result-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .result-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--surface-border);
+            padding-bottom: 0.25rem;
+        }
+
+        .transcript-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #e2e8f0;
+            font-style: italic;
+            border-left: 3px solid var(--primary);
+            padding-left: 1rem;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .data-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            position: relative;
+        }
+
+        .data-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 0.25rem;
+        }
+
+        .data-value {
+            font-size: 1rem;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .missing-value {
+            color: var(--danger);
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .askback-msg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #fca5a5;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-badge.complete {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+        }
+
+        .status-badge.incomplete {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.5);
+        }
+
+        .metrics {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--surface-border);
+        }
+
+        /* Animations */
+        @keyframes pulse-danger {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        @keyframes ripple-anim {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Icons SVG */
+        .icon {
+            width: 48px;
+            height: 48px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        
+        .mic-icon { display: block; }
+        .stop-icon { display: none; }
+        .spinner-icon { display: none; }
+
+        .mic-btn.recording .mic-icon { display: none; }
+        .mic-btn.recording .stop-icon { display: block; }
+        
+        .mic-btn.processing .mic-icon, .mic-btn.processing .stop-icon { display: none; }
+        .mic-btn.processing .spinner-icon { display: block; }
+
+        .waveform {
+            display: none;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin: 0 auto;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .waveform.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .bar {
+            width: 4px;
+            background: var(--danger);
+            border-radius: 2px;
+            animation: bounce 0s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { height: 8px; }
+            50% { height: 32px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Voice Analysis</h1>
+        <p class="subtitle">Press the microphone to record customer details</p>
+
+        <div class="mic-container">
+            <button id="micBtn" class="mic-btn" aria-label="Microphone">
+                <!-- Mic Icon -->
+                <svg class="icon mic-icon" viewBox="0 0 24 24">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <!-- Stop Icon -->
+                <svg class="icon stop-icon" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect>
+                </svg>
+                <!-- Spinner Icon -->
+                <svg class="icon spinner-icon" viewBox="0 0 24 24">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                </svg>
+            </button>
+            <div class="ripple"></div>
+            <div class="ripple"></div>
+            <div class="ripple"></div>
+        </div>
+
+        <div class="waveform" id="waveform">
+            <!-- Bars will be generated by JS -->
+        </div>
+
+        <div id="statusText" class="status-text">Ready to record</div>
+
+        <div id="resultsBox" class="results-box">
+            <div class="result-section" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="result-title" style="margin: 0;">Extraction Status</span>
+                <div id="statusBadge" class="status-badge"></div>
+            </div>
+
+            <div class="result-section">
+                <div class="result-title">Transcript</div>
+                <div id="transcriptText" class="transcript-text"></div>
+            </div>
+
+            <div class="result-section">
+                <div class="result-title">Extracted Details</div>
+                <div id="dataGrid" class="data-grid">
+                    <!-- Data items injected here -->
+                </div>
+            </div>
+
+            <div id="askBackSection" class="result-section" style="display: none;">
+                <div class="result-title">System Ask-Back</div>
+                <div class="askback-msg">
+                    <svg style="width: 24px; height: 24px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="askBackText"></span>
+                </div>
+            </div>
+
+            <div class="metrics" id="metricsSection">
+                <span id="sttMetric">STT: 0.0s</span>
+                <span id="llmMetric">LLM: 0.0s</span>
+                <span id="totalMetric">Total: 0.0s</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const micBtn = document.getElementById('micBtn');
+        const statusText = document.getElementById('statusText');
+        const resultsBox = document.getElementById('resultsBox');
+        const waveform = document.getElementById('waveform');
+        
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // Create waveform bars
+        for (let i = 0; i < 15; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.animationDuration = `${0.5 + Math.random() * 0.5}s`;
+            waveform.appendChild(bar);
+        }
+
+        micBtn.addEventListener('click', async () => {
+            if (micBtn.classList.contains('processing')) return; // Ignore clicks while processing
+            
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    // Provide a filename with an ext
+                    const ext = mediaRecorder.mimeType && mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
+                    const audioFile = new File([audioBlob], `recording.${ext}`, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    
+                    await processAudio(audioFile);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add('recording');
+                waveform.classList.add('active');
+                waveform.style.display = 'flex';
+                statusText.textContent = "Recording... tap to stop";
+                statusText.style.color = "var(--danger)";
+                
+                // Hide previous results
+                resultsBox.classList.remove('show');
+
+            } catch (err) {
+                console.error("Error accessing mic: ", err);
+                statusText.textContent = "Error accessing microphone";
+                statusText.style.color = "var(--danger)";
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            micBtn.classList.add('processing');
+            waveform.classList.remove('active');
+            setTimeout(() => waveform.style.display = 'none', 300);
+            
+            statusText.textContent = "Processing audio...";
+            statusText.style.color = "var(--primary)";
+        }
+
+        async function processAudio(file) {
+            const formData = new FormData();
+            formData.append("audio_file", file);
+
+            try {
+                const response = await fetch("/process_audio", {
+                    method: "POST",
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                micBtn.classList.remove('processing');
+                statusText.textContent = "Processing complete";
+                statusText.style.color = "var(--success)";
+                
+                displayResults(result);
+                
+            } catch (err) {
+                console.error("Error processing audio: ", err);
+                micBtn.classList.remove('processing');
+                statusText.textContent = "Error processing audio";
+                statusText.style.color = "var(--danger)";
+            }
+        }
+        
+        function displayResults(result) {
+            if (result.status === "error") {
+                statusText.textContent = result.message || "An error occurred";
+                statusText.style.color = "var(--danger)";
+                return;
+            }
+            
+            // Populate transcript
+            document.getElementById('transcriptText').textContent = `"${result.transcript}"`;
+            
+            // Populate Badge
+            const badge = document.getElementById('statusBadge');
+            badge.textContent = result.status;
+            badge.className = 'status-badge ' + (result.status === "COMPLETE" ? "complete" : "incomplete");
+            
+            // Populate Data Grid
+            const grid = document.getElementById('dataGrid');
+            grid.innerHTML = ''; // clear old
+            
+            const fields = [
+                { key: 'name', label: 'First Name' },
+                { key: 'surname', label: 'Last Name' },
+                { key: 'gender', label: 'Gender' },
+                { key: 'phone', label: 'Phone' },
+                { key: 'license_plate', label: 'License Plate' },
+                { key: 'additional_info', label: 'Extra Info' }
+            ];
+            
+            fields.forEach(field => {
+                const val = result.data ? result.data[field.key] : null;
+                const isMissing = val === null || val === undefined || val === "";
+                
+                // Only show additional info if it exists
+                if (field.key === 'additional_info' && isMissing) return;
+                
+                const item = document.createElement('div');
+                item.className = 'data-item';
+                
+                const label = document.createElement('div');
+                label.className = 'data-label';
+                label.textContent = field.label;
+                
+                const value = document.createElement('div');
+                if (isMissing) {
+                    value.className = 'missing-value';
+                    value.textContent = 'Missing';
+                } else {
+                    value.className = 'data-value';
+                    value.textContent = val;
+                }
+                
+                item.appendChild(label);
+                item.appendChild(value);
+                grid.appendChild(item);
+            });
+            
+            // Ask Back
+            const askBackSec = document.getElementById('askBackSection');
+            if (result.status === "INCOMPLETE" && result.message) {
+                askBackSec.style.display = 'block';
+                document.getElementById('askBackText').textContent = result.message;
+            } else {
+                askBackSec.style.display = 'none';
+            }
+            
+            // Metrics
+            if (result.metrics) {
+                document.getElementById('sttMetric').textContent = `STT: ${result.metrics.stt_duration}s`;
+                document.getElementById('llmMetric').textContent = `LLM: ${result.metrics.llm_extract_duration}s`;
+                document.getElementById('totalMetric').textContent = `Total: ${result.metrics.total_duration}s`;
+            }
+            
+            // Show box
+            resultsBox.classList.add('show');
+            setTimeout(() => {
+                statusText.textContent = "Ready to record";
+                statusText.style.color = "var(--text-dim)";
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

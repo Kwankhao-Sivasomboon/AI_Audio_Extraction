@@ -1,0 +1,17 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.db
+.venv
+venv
+env
+.env
+audio/*
+*.dll
+*.exe
+.vscode
+.idea
+*.pdf
+README.md
